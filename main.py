@@ -97,19 +97,19 @@ class Bidding:
         hands = cls.computation() 
         all_dicts = [{k:sum(map(int, v)) for k, v in g.items()} for g in hands]
         sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
-        #added = [dict(sum(i.items()), lambda item: item[1])for i in all_dicts]
-        a = [sum(map(int, i.values()))for i in sorted_dicts] # Sorry for vagueness :))))
-        #print(a)
+        a = [sum(map(int, i.values()))for i in sorted_dicts]
+
         print(sorted_dicts)
         print("----"*10, a)
         return sorted_dicts
-    
+        
     @classmethod
     def f_count(cls):
         groups = cls.computation()
         suits = defaultdict(list)
         for rank, suit in groups:
             suits[suit.lower()].append((rank,suit))
+
 
         """
         #mu_r = np.mean(f_rank)
