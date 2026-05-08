@@ -94,23 +94,50 @@ class Bidding:
         2) Bidding: suits must be prioritized based on points for bidding, 
            with a score calculation for each suit.
         """
-        hands = cls.computation() 
+        hands = cls.computation()
         all_dicts = [{k:sum(map(int, v)) for k, v in g.items()} for g in hands]
         sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
         a = [sum(map(int, i.values()))for i in sorted_dicts]
-
-        print(sorted_dicts)
-        print("----"*10, a)
+        
         return sorted_dicts
         
     @classmethod
     def f_count(cls):
         groups = cls.computation()
-        suits = defaultdict(list)
-        for rank, suit in groups:
-            suits[suit.lower()].append((rank,suit))
+        count = [{k: len(v) for k, v in g.items()} for g in groups]
 
+        return count
+    @classmethod
+    def f_point(cls):
+        points_dict = {'5':5,'10':10,'14':10,'15':15,'20':20}
+        groups = cls.computation()
+        points = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
 
+        return points
+
+    @classmethod
+    def score_points(cls,a=1,b=2,c=3):
+        f_rank = cls.f_rank()
+        print(f_rank[0].get("diamonds"))
+        """mu_f_rank = np.mean(f_rank)
+        sigma_f_rank = np.std(f_rank)
+        z_rank = (f_rank-mu_f_rank) / sigma_f_rank
+
+        f_count = cls.f_count()
+        mu_count = np.mean(f_count)
+        sigma_f_count = np.std(f_count)
+        z_count = (f_count-mu_count) / sigma_f_count
+
+        f_points = cls.f_point()
+        mu_points = np.mean(f_points)
+        sigma_f_points = np.std(f_points)
+        z_points = (f_points-mu_points)/sigma_f_points
+        
+        cls.score = (a* z_rank) + (b* z_count) + (c* z_points)
+        """
+          
+        
+        
         """
         #mu_r = np.mean(f_rank)
         sigma_r = np.std(f_rank)
@@ -129,6 +156,7 @@ p2 = obj1.remainings()
 print(p1,p2)
 """
 bid = Bidding()
-bid_1 = bid.f_rank()
+bid_1 = bid.score_points()
+print(bid_1)
 #print(bid_1)
 #l1 = [1,2,3]
