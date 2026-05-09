@@ -18,7 +18,7 @@ class ShuffleDeal:
         deck = [(r,s) for s in cls.suits for r in cls.ranks]
         cls.with_jokers = with_jokers
         if with_jokers:
-            deck+= [("20","Red"), ("15","Black")]
+            deck+= [("16","red"), ("15","black")]
         return deck
 
     @classmethod
@@ -38,12 +38,13 @@ class ShuffleDeal:
         cls.deck = cls.shuffle()
         dealt = {player: cls.deck[i*12:(i+1) *12]
             for i, player in enumerate(cls.players)}
-        suit_order= {'clubs':0,
-                     'hearts':1,
-                     'spades':2,
-                     'diamonds':3,
-                     'Black':4,
-                     'Red':5
+        suit_order= {'black':0,
+                     'red':1,
+                     'clubs':2,
+                     'hearts':3,
+                     'spades':4,
+                     'diamonds':5,
+
                      }
         for player in dealt:
             dealt[player] = sorted(
@@ -92,14 +93,24 @@ class Bidding:
         Ranking suits for every player to estimate their potential for each strategy:
         1) Going negative: the rank is estimate raw as the trump is not defined yet.
         2) Bidding: suits must be prioritized based on points for bidding, 
-           with a score calculation for each suit.
+           with a scrore calculation for each suit.
         """
+
         hands = cls.computation()
+        """
+        mu_f_rank = np.mean(f_rank) = 26
+        sigma_f_rank = np.std(f_rank)
+        z_rank = (f_rank-mu_f_rank) / sigma_f_rank
+        """
         all_dicts = [{k:sum(map(int, v)) for k, v in g.items()} for g in hands]
-        sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
-        a = [sum(map(int, i.values()))for i in sorted_dicts]
+
+        suits = ['diamonds', 'spades', 'hearts', 'clubs']
+        std = [float(np.std([i.get(j,0) for i in all_dicts])) for j in suits]
+        z_score_rank = [{suit: (round((i.get(suit, 0)- 26) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in all_dicts]
+        print(z_score_rank, "----"*20,std)
         
-        return sorted_dicts
+        #sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
+        return z_score_rank
         
     @classmethod
     def f_count(cls):
@@ -107,28 +118,28 @@ class Bidding:
         count = [{k: len(v) for k, v in g.items()} for g in groups]
 
         return count
+
     @classmethod
     def f_point(cls):
-        points_dict = {'5':5,'10':10,'14':10,'15':15,'20':20}
+        points_dict = {'5':5,'10':10,'14':10,'15':15,'16':20}
         groups = cls.computation()
         points = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
-
+        print(points)
         return points
 
     @classmethod
     def score_points(cls,a=1,b=2,c=3):
         f_rank = cls.f_rank()
-        print(f_rank[0].get("diamonds"))
-        """mu_f_rank = np.mean(f_rank)
-        sigma_f_rank = np.std(f_rank)
-        z_rank = (f_rank-mu_f_rank) / sigma_f_rank
-
         f_count = cls.f_count()
+        f_points = cls.f_point()
+
+        suits = ["diamonds", "spades", "hearts", "clubs"]
+                
+        """
         mu_count = np.mean(f_count)
         sigma_f_count = np.std(f_count)
         z_count = (f_count-mu_count) / sigma_f_count
 
-        f_points = cls.f_point()
         mu_points = np.mean(f_points)
         sigma_f_points = np.std(f_points)
         z_points = (f_points-mu_points)/sigma_f_points
@@ -156,7 +167,7 @@ p2 = obj1.remainings()
 print(p1,p2)
 """
 bid = Bidding()
-bid_1 = bid.score_points()
-print(bid_1)
+bid_1 = bid.f_rank()
+#print(bid_1)
 #print(bid_1)
 #l1 = [1,2,3]
