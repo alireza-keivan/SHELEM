@@ -44,7 +44,6 @@ class ShuffleDeal:
                      'hearts':3,
                      'spades':4,
                      'diamonds':5,
-
                      }
         for player in dealt:
             dealt[player] = sorted(
@@ -59,8 +58,7 @@ class ShuffleDeal:
 
         return sorted_players, dealt
 
-    @classmethod
-    
+    @classmethod    
     def remainings(cls):
         """if jokers are played, we have 6 cards on the ground, else there are 4!"""
         if cls.with_jokers:
@@ -70,11 +68,10 @@ class ShuffleDeal:
             remainings = cls.deck[-4:]
             return remainings
 
-class Bidding:
-    
+class Bidding():
+    deal = ShuffleDeal.deal()
     @classmethod
     def computation(cls):
-        cls.deal = ShuffleDeal.deal()
         dict_keys = cls.deal[1].keys()
         val = []
         [val.append(cls.deal[1][i][0:12]) for i in dict_keys]
@@ -102,25 +99,39 @@ class Bidding:
         sigma_f_rank = np.std(f_rank)
         z_rank = (f_rank-mu_f_rank) / sigma_f_rank
         """
-        all_dicts = [{k:sum(map(int, v)) for k, v in g.items()} for g in hands]
+        all_dicts = [{k:sum(map(int, v)) for k, v in g.items()} for g in hands] # created a dict for each hand consisted of every suit + Jokers
 
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
-        std = [float(np.std([i.get(j,0) for i in all_dicts])) for j in suits]
-        z_score_rank = [{suit: (round((i.get(suit, 0)- 26) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in all_dicts]
-        print(z_score_rank, "----"*20,std)
+        std = [float(np.std([i.get(j,0) for i in all_dicts])) for j in suits] # standard deviation calculation for z-score
+        z_score_rank = [{suit: (round((i.get(suit, 0)- 26) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in all_dicts] # z-score normalization based on each suit
+        print(z_score_rank)
         
         #sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
         return z_score_rank
         
-    @classmethod
+    @classmethod   
     def f_count(cls):
+        """counting every suit:
+            we get the length of each suit for every player and save them in a dictionary! 
+            e.g. {'diamonds': 4} showing player x1 has 4 diamonds in their hand 
+        """
         groups = cls.computation()
-        count = [{k: len(v) for k, v in g.items()} for g in groups]
+        suits = ['diamonds', 'spades', 'hearts', 'clubs', 'red', 'black']
+        #count = [{k: len(v) for k, v in g.items()} for g in groups]
+        
 
-        return count
+        a = [{k:len((n.get(i,0)))} if n.get(i) != None else 0 for (k,i) in zip(suits, suits) for n in groups]
+        print(a)
+        #print(count)
+        #return count
+        pass
 
     @classmethod
     def f_point(cls):
+        """special points are the special parts of Shelem! 
+            we calculate each suit's value based on this criterion to have a better understanding of the hand's strength,
+            both for bidding and going negative!  
+        """
         points_dict = {'5':5,'10':10,'14':10,'15':15,'16':20}
         groups = cls.computation()
         points = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
@@ -129,12 +140,14 @@ class Bidding:
 
     @classmethod
     def score_points(cls,a=1,b=2,c=3):
-        f_rank = cls.f_rank()
+        #f_rank = cls.f_rank()
         f_count = cls.f_count()
-        f_points = cls.f_point()
-
+        #f_points = cls.f_point()
+        #print(f_count, "---", f_rank, "***", f_points)
         suits = ["diamonds", "spades", "hearts", "clubs"]
-                
+        #z-final = [a*f_rank+ b*f_count+ c*f_points]
+
+
         """
         mu_count = np.mean(f_count)
         sigma_f_count = np.std(f_count)
@@ -167,7 +180,7 @@ p2 = obj1.remainings()
 print(p1,p2)
 """
 bid = Bidding()
-bid_1 = bid.f_rank()
+bid_1 = bid.score_points()
 #print(bid_1)
 #print(bid_1)
 #l1 = [1,2,3]
