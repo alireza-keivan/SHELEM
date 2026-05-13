@@ -70,6 +70,7 @@ class ShuffleDeal:
 
 class Bidding():
     deal = ShuffleDeal.deal()
+
     @classmethod
     def computation(cls):
         dict_keys = cls.deal[1].keys()
@@ -84,6 +85,21 @@ class Bidding():
         
         return cls.groups
     
+    @staticmethod
+    def formula(hand):
+        suits = ['diamonds', 'spades', 'hearts', 'clubs']
+        stds = [float(np.std([i.get(j,0) for i in hand])) for j in suits] # standard deviation calculation for z-score
+        means = [float(np.mean([i.get(j, 0) for i in hand])) for j in suits]
+        z_score = [
+            {
+                suit: round((i.get(suit, 0) - mu) / sigma, 3)
+                if sigma != 0 else 0
+                for suit, mu, sigma in zip(suits, means, stds)
+            }
+            for i in hand
+        ]
+        return z_score
+
     @classmethod
     def f_rank(cls):
         """
@@ -93,20 +109,25 @@ class Bidding():
            with a scrore calculation for each suit.
         """
 
-        hands = cls.computation()
-        """
-        mu_f_rank = np.mean(f_rank) = 26
-        sigma_f_rank = np.std(f_rank)
-        z_rank = (f_rank-mu_f_rank) / sigma_f_rank
-        """
-        all_dicts = [{k:sum(map(int, v)) for k, v in g.items()} for g in hands] # created a dict for each hand consisted of every suit + Jokers
-
+        groups = cls.computation()
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
-        std = [float(np.std([i.get(j,0) for i in all_dicts])) for j in suits] # standard deviation calculation for z-score
-        z_score_rank = [{suit: (round((i.get(suit, 0)- 26) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in all_dicts] # z-score normalization based on each suit
-        
-        #sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
-        return z_score_rank, all_dicts
+        rank_map = {'red': 20, 'black':15}
+        rank = []
+        for g in groups:
+            player = {
+                suit:sum(int(card) for card in g.get(suit, []))
+                for suit in suits
+                }
+            player['joker'] = sum(
+                rank_map.get(joker,0)
+                  for joker in ['red','black']
+                    if joker in g
+                    )
+            rank.append(player) 
+        # created a dict for each hand consisted of every suit + Jokers
+        z_score = cls.formula(rank)
+
+        return z_score, rank
         
     @classmethod   
     def f_count(cls):
@@ -118,13 +139,8 @@ class Bidding():
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
         count = [{i:len((n.get(i,[]))) for i in suits} for n in groups]
         
-        # standard deviation calculation for z-score
-        std = [float(np.std([i.get(j,0) for i in count])) for j in suits] 
-        
-        # z-score normalization based on each suit
-        z_score_rank = [{suit: (round((i.get(suit, 0)- 3) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in count] 
-
-        return z_score_rank, count
+        z_score = cls.formula(count)
+        return z_score, count
 
     @classmethod
     def f_point(cls):
@@ -135,14 +151,8 @@ class Bidding():
         points_dict = {'5':5,'10':10,'14':10,'15':15,'16':20}
         groups = cls.computation()
         points = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
-        
-        suits = ['diamonds', 'spades', 'hearts', 'clubs']
-        std = [float(np.std([i.get(j,0) for i in points])) for j in suits] # standard deviation calculation for z-score
-        
-        # z-score normalization based on each suit
-        z_score_rank = [{suit: (round(i.get(suit, 0)- 25 / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in points] 
-
-        return z_score_rank, points
+        z_score = cls.formula(points)
+        return z_score, points
 
     @classmethod
     def score_points(cls,a=1,b=2,c=3):
@@ -152,36 +162,10 @@ class Bidding():
         #z-final = [a*f_rank+ b*f_count+ c*f_points]
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
         final = [{s: round(rank.get(s,0) + count.get(s,0)+ point.get(s,0),3) for s in suits} for rank, count, point in zip(f_rank[0], f_count[0], f_points[0])]
-        print("rank:",f_rank[1], "\n"*2,'count:', f_count[1], "\n"*2, "point:", f_points[1], "\n"*2, "final:", final)
-        
-        """
-        mu_count = np.mean(f_count)
-        sigma_f_count = np.std(f_count)
-        z_count = (f_count-mu_count) / sigma_f_count
+        #print("rank:",f_rank[1], "\n"*2,'count:', f_count[1], "\n"*2, "point:", f_points[1], "\n"*2, "final:", final)
+        print(f_rank[0], "\n"*2, f_rank[1], f_count, f_points)
 
-        mu_points = np.mean(f_points)
-        sigma_f_points = np.std(f_points)
-        z_points = (f_points-mu_points)/sigma_f_points
-        
-        cls.score = (a* z_rank) + (b* z_count) + (c* z_points)
-        """
 
-        """
-        #mu_r = np.mean(f_rank)
-        sigma_r = np.std(f_rank)
-        z = (x - np.mean(x)) / np.std(x)
-        z_rank = (f_rank - mu_r) / sigma_r
-        score = alpha*z_rank + beta*z_count + gamma*z_points
-        features = np.vstack([z_rank, z_count, z_points])
-        weights = np.array([alpha, beta, gamma])
-        score = weights @ features
-        """
-
-"""obj1= ShuffleDeal()
-p1 = obj1.deal()
-p2 = obj1.remainings()
-print(p1,p2)
-"""
 bid = Bidding()
 bid_1 = bid.score_points()
 
