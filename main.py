@@ -104,10 +104,9 @@ class Bidding():
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
         std = [float(np.std([i.get(j,0) for i in all_dicts])) for j in suits] # standard deviation calculation for z-score
         z_score_rank = [{suit: (round((i.get(suit, 0)- 26) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in all_dicts] # z-score normalization based on each suit
-        #print(z_score_rank)
         
         #sorted_dicts = [dict(sorted(i.items(), key=lambda item: item[1], reverse=True)) for i in all_dicts]
-        return z_score_rank
+        return z_score_rank, all_dicts
         
     @classmethod   
     def f_count(cls):
@@ -117,12 +116,15 @@ class Bidding():
         """
         groups = cls.computation()
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
-        
-
         count = [{i:len((n.get(i,[]))) for i in suits} for n in groups]
-        #print(count)
+        
+        # standard deviation calculation for z-score
+        std = [float(np.std([i.get(j,0) for i in count])) for j in suits] 
+        
+        # z-score normalization based on each suit
+        z_score_rank = [{suit: (round((i.get(suit, 0)- 3) / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in count] 
 
-        return count
+        return z_score_rank, count
 
     @classmethod
     def f_point(cls):
@@ -133,19 +135,25 @@ class Bidding():
         points_dict = {'5':5,'10':10,'14':10,'15':15,'16':20}
         groups = cls.computation()
         points = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
-        #print(points)
-        return points
+        
+        suits = ['diamonds', 'spades', 'hearts', 'clubs']
+        std = [float(np.std([i.get(j,0) for i in points])) for j in suits] # standard deviation calculation for z-score
+        
+        # z-score normalization based on each suit
+        z_score_rank = [{suit: (round(i.get(suit, 0)- 25 / n,3)) if n!= 0 else 0 for suit, n in zip(suits, std)} for i in points] 
+
+        return z_score_rank, points
 
     @classmethod
     def score_points(cls,a=1,b=2,c=3):
         f_rank = cls.f_rank()
         f_count = cls.f_count()
         f_points = cls.f_point()
-        #print(f_count, "---", f_rank, "***", f_points)
-        suits = ["diamonds", "spades", "hearts", "clubs"]
         #z-final = [a*f_rank+ b*f_count+ c*f_points]
-        print(f_count[0], f_rank[0], f_points[0])
-
+        suits = ['diamonds', 'spades', 'hearts', 'clubs']
+        final = [{s: round(rank.get(s,0) + count.get(s,0)+ point.get(s,0),3) for s in suits} for rank, count, point in zip(f_rank[0], f_count[0], f_points[0])]
+        print("rank:",f_rank[1], "\n"*2,'count:', f_count[1], "\n"*2, "point:", f_points[1], "\n"*2, "final:", final)
+        
         """
         mu_count = np.mean(f_count)
         sigma_f_count = np.std(f_count)
@@ -167,7 +175,7 @@ class Bidding():
         features = np.vstack([z_rank, z_count, z_points])
         weights = np.array([alpha, beta, gamma])
         score = weights @ features
-        """         
+        """
 
 """obj1= ShuffleDeal()
 p1 = obj1.deal()
