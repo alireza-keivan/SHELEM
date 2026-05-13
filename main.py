@@ -66,10 +66,12 @@ class ShuffleDeal:
             return remainings
         else:
             remainings = cls.deck[-4:]
-            return remainings
+
+        return remainings
 
 class Bidding():
     deal = ShuffleDeal.deal()
+    suits = ['diamonds', 'spades', 'hearts', 'clubs']
 
     @classmethod
     def computation(cls):
@@ -85,16 +87,22 @@ class Bidding():
         
         return cls.groups
     
-    @staticmethod
-    def formula(hand):
-        suits = ['diamonds', 'spades', 'hearts', 'clubs']
-        stds = [float(np.std([i.get(j,0) for i in hand])) for j in suits] # standard deviation calculation for z-score
-        means = [float(np.mean([i.get(j, 0) for i in hand])) for j in suits]
+    @classmethod
+    def formula(cls,hand):
+        # standard deviation calculation for z-score
+        stds = [
+            float(np.std([i.get(j,0) for i in hand]))
+            for j in cls.suits
+            ]
+        means = [
+            float(np.mean([i.get(j, 0) for i in hand]))
+            for j in cls.suits
+            ]
         z_score = [
             {
                 suit: round((i.get(suit, 0) - mu) / sigma, 3)
                 if sigma != 0 else 0
-                for suit, mu, sigma in zip(suits, means, stds)
+                for suit, mu, sigma in zip(cls.suits, means, stds)
             }
             for i in hand
         ]
@@ -110,13 +118,12 @@ class Bidding():
         """
 
         groups = cls.computation()
-        suits = ['diamonds', 'spades', 'hearts', 'clubs']
         rank_map = {'red': 20, 'black':15}
         rank = []
         for g in groups:
             player = {
                 suit:sum(int(card) for card in g.get(suit, []))
-                for suit in suits
+                for suit in cls.suits
                 }
             player['joker'] = sum(
                 rank_map.get(joker,0)
@@ -136,8 +143,7 @@ class Bidding():
             e.g. {'diamonds': 4} showing player x1 has 4 diamonds in their hand 
         """
         groups = cls.computation()
-        suits = ['diamonds', 'spades', 'hearts', 'clubs']
-        count = [{i:len((n.get(i,[]))) for i in suits} for n in groups]
+        count = [{i:len((n.get(i,[]))) for i in cls.suits} for n in groups]
         
         z_score = cls.formula(count)
         return z_score, count
@@ -150,16 +156,15 @@ class Bidding():
         """
         points_dict = {'5':5,'10':10,'14':10,'15':15,'16':20}
         groups = cls.computation()
-        points = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
-        z_score = cls.formula(points)
-        return z_score, points
+        point = [{k: sum(points_dict.get(card, 0) for card in cards) for k, cards in g.items()} for g in groups]
+        z_score = cls.formula(point)
+        return z_score, point
 
     @classmethod
     def score_points(cls,a=1,b=2,c=3):
         f_rank = cls.f_rank()
         f_count = cls.f_count()
         f_points = cls.f_point()
-        #z-final = [a*f_rank+ b*f_count+ c*f_points]
         suits = ['diamonds', 'spades', 'hearts', 'clubs']
         final = [{s: round(rank.get(s,0) + count.get(s,0)+ point.get(s,0),3) for s in suits} for rank, count, point in zip(f_rank[0], f_count[0], f_points[0])]
         #print("rank:",f_rank[1], "\n"*2,'count:', f_count[1], "\n"*2, "point:", f_points[1], "\n"*2, "final:", final)
